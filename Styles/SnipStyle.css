@@ -1,0 +1,113 @@
+﻿body 
+{
+    background-color: Silver;
+}
+
+h1
+{
+    font-size: 20px;
+    font-family: Arial;
+}
+
+h2
+{
+    font-size: 18px;
+    color: Green;
+    font-family: Arial;
+}
+
+p
+{
+    color: Black;
+    font-family: Arial;
+}    
+    
+.RightAligned
+{
+    text-align: right;
+}
+
+#Header
+{
+    background-color: #336633;
+    width: 844px;
+    height: 86px;
+    font-size: 18px;
+    font-family: Arial;
+}
+
+#HeaderLogo
+{
+    height: 86px;
+    width: 211px;
+    font-size: 18px;
+    font-family: Arial;
+    float: left;
+    border: 0px;
+}
+
+#HeaderContent
+{
+    height: 86px;
+    width: 623px;
+    font-size: 18px;
+    font-family: Arial;
+    float: right;
+    text-align: right;
+    display: table-cell;
+    line-height: 86px;
+    padding-right: 10px;
+    
+}
+
+#PageWrapper
+{
+    float: left;
+    width: 100%;
+    position:relative;
+}
+
+#MenuWrapper
+{
+    width: 844px;
+}
+
+#MainContent
+{
+    width: 824px;
+    float: left;
+    background-color: White;
+    padding: 10px;
+}
+
+#Sidebar
+{
+    background-color: #336633;
+    width: 211px;
+    float: left;
+    font-family: Arial;
+    position:relative;  
+}
+
+#Footer
+{
+    background-color: #336633;
+    width: 844px;
+    clear: both;
+    text-align: center;
+    font-family: Arial;
+}
+#WholePage
+{
+    width: 844px;
+    margin:0px auto;
+}
+
+label
+{
+    max-width: 824px;
+    white-space: pre-wrap;
+}
+
+
+a img, a:link img, a:visited img, a:hover img, a:active img { border:0 !important; } 

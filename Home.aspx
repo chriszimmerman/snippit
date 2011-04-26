@@ -10,19 +10,18 @@
 
     <asp:TextBox id="_codeText" runat="server" Height="437px" TextMode="MultiLine" Width="814px" Wrap="true">
     </asp:TextBox>
-
     <p>
 
     <asp:DropDownList ID="DropDownList1" runat="server" 
         style="height: 22px" 
             onselectedindexchanged="DropDownList1_SelectedIndexChanged">
-        <asp:ListItem Selected="True" Value="0">General formatting</asp:ListItem>
-        <asp:ListItem Value="1">Java</asp:ListItem>
+        <asp:ListItem Selected="True" Value="none">General formatting</asp:ListItem>
+        <asp:ListItem Value="java">Java</asp:ListItem>
 
     </asp:DropDownList>
 
     <p>
-    <asp:Button ID="CodeButton" runat="server" Text="Submit" PostBackUrl="~/CodePage.aspx" />
+    <asp:Button ID="CodeButton" runat="server" Text="Submit" onclick="CodeButton_Click1" />
 
 </asp:Content>
 

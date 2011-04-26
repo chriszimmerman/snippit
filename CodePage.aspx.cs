@@ -4,127 +4,74 @@ using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using System.Data.SqlClient;
+using System.Text.RegularExpressions;
+
 
 public partial class CodePage : System.Web.UI.Page
 {
     protected void Page_Load(object sender, EventArgs e)
     {
-        if (Page.PreviousPage != null)
+        string url = Request.QueryString["code"]; //gets the unique url to fetch the code from the database
+
+        //connect to the database and fetch the code out of the database
+        string connectString = @"Data Source=.\SQLEXPRESS;AttachDbFilename=C:\Users\Zimmy\Documents\Snippit\App_Data\Database.mdf;Integrated Security=True;User Instance=True;Asynchronous Processing=true";
+        SqlConnection conn = new SqlConnection(connectString);
+        SqlDataReader codeRetriever = null;
+
+        conn.Open();
+        SqlCommand getCode = new SqlCommand("select * from Code where url='" + url + "'", conn);
+        codeRetriever = getCode.ExecuteReader();
+
+        //if we found a code entry in the database, print it out. Otherwise, say that the file's not found
+        if (codeRetriever.HasRows)
         {
-            string code = PreviousPage.Name;
-            int lang = PreviousPage.Lang;
-            code = format(code, lang);
-            Label1.Text = "<pre>" + code + "<pre>";
-        }
-    }
+            codeRetriever.Read();
 
-    public string format(string input, int language)
-    {
-        switch(language)
-        {
-            case 0:
-                input = format_reg(input);
-                break;
-            case 1:
-                input = format_java(input);
-                break;
-        }
-        return input;
-    }
+            //set the code to a string variable and print it to the page
+            string theCode = codeRetriever[1].ToString();
+            theCode.Replace(" ", "&nbsp;");
+            string fcode = "";
 
-    public string format_reg(string input)
-    {
-        input = input.Replace(Environment.NewLine, "<br/>");
-        input = input.Replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
 
-        return input;
-    }
+            string[] tokens = System.Text.RegularExpressions.Regex.Split(theCode, "\n");
 
-    public string format_java(string input)
-    {
-        string seps = @"(\t)|(\n)|(\+)|(-)|(\*)|(/)|(\()|(\))|(\})|(\{)|( )|(;)|(\[)|(\])";
-        string[] tokens = System.Text.RegularExpressions.Regex.Split(input, seps);
+            fcode += "<table cellspacing=\"0\"> " +
+                    " <caption>Code:</caption>" +
+                    "<colgroup id=\"numcol\" span=\"1\" ></colgroup>";
 
-        string temp;
-        string output = "";
-
-        SortedSet<string> keywords = new SortedSet<string>();
-        keywords.Add("abstract");
-        keywords.Add("assert");
-        keywords.Add("boolean");
-        keywords.Add("break");
-        keywords.Add("byte");
-        keywords.Add("case");
-        keywords.Add("catch");
-        keywords.Add("char");
-        keywords.Add("class");
-        keywords.Add("const");
-        keywords.Add("continue");
-        keywords.Add("default");
-        keywords.Add("do");
-        keywords.Add("double");
-        keywords.Add("else");
-        keywords.Add("enum");
-        keywords.Add("extends");
-        keywords.Add("final");
-        keywords.Add("finally");
-        keywords.Add("float");
-        keywords.Add("for");
-        keywords.Add("goto");
-        keywords.Add("if");
-        keywords.Add("implements");
-        keywords.Add("import");
-        keywords.Add("instanceof");
-        keywords.Add("int");
-        keywords.Add("interface");
-        keywords.Add("long");
-        keywords.Add("native");
-        keywords.Add("new");
-        keywords.Add("package");
-        keywords.Add("private");
-        keywords.Add("protected");
-        keywords.Add("public");
-        keywords.Add("return");
-        keywords.Add("short");
-        keywords.Add("static");
-        keywords.Add("strictfp");
-        keywords.Add("super");
-        keywords.Add("switch");
-        keywords.Add("synchronized");
-        keywords.Add("this");
-        keywords.Add("throw");
-        keywords.Add("throws");
-        keywords.Add("transient");
-        keywords.Add("try");
-        keywords.Add("void");
-        keywords.Add("volatile");
-        keywords.Add("while");
-
-        SortedSet<string> containers = new SortedSet<string>();
-        containers.Add(")");
-        containers.Add("(");
-        containers.Add("}");
-        containers.Add("{");
-        containers.Add("]");
-        containers.Add("[");
-
-        foreach (string token in tokens)
-        {
-            temp = token;
-
-            if (containers.Contains(temp))
+            for (int i = 0; i < tokens.Length; i++)
             {
-                temp = "<font color=\"red\">" + temp + "</font>";
-            }
-            if (keywords.Contains(temp))
-            {
-                temp = "<b><font color=\"blue\">" + temp + "</font></b>";
+                fcode += codeline(i, tokens[i]);
             }
 
-            output = String.Concat(output, temp);
+            fcode += "</table>";
+
+            fcode = "<pre>" + fcode + "</pre>";
+            
+            Label1.Text = fcode;
+        }
+        else
+        {
+            Label1.Text = "No file found.";
         }
 
-        return output;
+        conn.Close();
+    }
+
+
+    public string codeline(int i, string line)
+    {
+        if ((i % 2) == 0)
+        {
+            return "<tr> <td><div>" + i +
+                    "</div></td><td><div id=\"evenline\"> &nbsp;" +
+                    line + "</div></td> </tr>";
+        }
+        else
+            return "<tr> <td><div>" + i +
+                    "</div></td><td><div id=\"oddline\"> &nbsp;" +
+                    line + "</div></td> </tr>";
     }
 
 }

@@ -5,6 +5,8 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.Data.SqlClient;
+using System.Text.RegularExpressions;
+using System.IO;
 
 public partial class Home : System.Web.UI.Page
 {
@@ -35,11 +37,7 @@ public partial class Home : System.Web.UI.Page
     }
 
     protected void Page_Load(object sender, EventArgs e)
-    {
-
-    }
-
-
+    {}
 
     protected void DropDownList1_SelectedIndexChanged(object sender, EventArgs e)
     {
@@ -48,7 +46,6 @@ public partial class Home : System.Web.UI.Page
 
     protected void CodeButton_Click1(object sender, EventArgs e)
     {   
-       // _codeText.Text.Replace('\'','\'');
         string url = genURL();                                          //randomly generated URL string
         string code = _codeText.Text;                                   //the code entered into the text box
         string formatted;                                               //the code after it has been formatteds
@@ -66,18 +63,39 @@ public partial class Home : System.Web.UI.Page
         string connectString = @"Data Source=.\SQLEXPRESS;AttachDbFilename=C:\Users\Zimmy\Documents\Snippit\App_Data\Database.mdf;Integrated Security=True;User Instance=True;Asynchronous Processing=true";
         SqlConnection conn = new SqlConnection(connectString);
         conn.Open();
-        
+
+        SqlParameter urlP = new SqlParameter();
+        SqlParameter sourceP = new SqlParameter();
+        SqlParameter languageP = new SqlParameter();
+        SqlParameter formattedP = new SqlParameter();
+
+        urlP.ParameterName = "@url";
+        urlP.Value = url;
+
+        sourceP.ParameterName = "@source";
+        sourceP.Value = code;
+
+        languageP.ParameterName = "@language";
+        languageP.Value = DropDownList1.SelectedValue;
+
+        formattedP.ParameterName = "@formatted";
+        formattedP.Value = formatted;
+
         //Insert the url, code, and language into the database
-        string command = "INSERT INTO Code (url, source, language, formatted) VALUES ('" + url + "', '" + code + "', '" + DropDownList1.SelectedItem + "','" + formatted + "')";
+        string command = "INSERT INTO Code (url, source, language, formatted) VALUES (@url, @source, @language, @formatted)";
         SqlCommand insert = new SqlCommand(command, conn);
+        insert.Parameters.Add(urlP);
+        insert.Parameters.Add(sourceP);
+        insert.Parameters.Add(languageP);
+        insert.Parameters.Add(formattedP);
         insert.ExecuteNonQuery();
         
         //close the SQL connection
         conn.Close();
 
-        /*string dest = "CodePage.aspx?";
+        string dest = "CodePage.aspx?";
         dest += "code=" + url;
-        Response.Redirect(dest);*/ //uncomment this when tokens + format works
+        Response.Redirect(dest);  //uncomment this when tokens + format works
     }
 
     //Generate a unique url
@@ -101,131 +119,68 @@ public partial class Home : System.Web.UI.Page
     //return formatted input code for the appropriate language
     public string format(string input, string language)
     {
-        SortedList<string, string> symbols = new SortedList<string, string>();
+        //read language-specific tokens/keywords and HTML tags from the file we want
+        StreamReader langfile = new StreamReader("C:\\Users\\Zimmy\\Documents\\Snippit\\Languages\\" + language + ".txt");
 
-        string connectString = @"Data Source=.\SQLEXPRESS;AttachDbFilename=C:\Users\Zimmy\Documents\Snippit\App_Data\Database.mdf;Integrated Security=True;User Instance=True;Asynchronous Processing=true";
-        SqlConnection conn = new SqlConnection(connectString);
-        SqlDataReader tokenRetriever = null;
-        conn.Open();
-        SqlCommand getTokens = new SqlCommand("select * from Tokens where language='"+ DropDownList1.SelectedValue + "'", conn);
-        tokenRetriever = getTokens.ExecuteReader();
+        //sorted lists containing each keyword or token to format and their corresponding HTML tags
+        SortedList<string, string> openers = new SortedList<string, string>();
+        SortedList<string, string> closers = new SortedList<string, string>();
 
-        string seps = @"";
+        string[] cols = new string[3];  //holds each value for each row of data
 
-        tokenRetriever.Read();
-        seps += "(" + tokenRetriever[1].ToString() + ")";
-        while (tokenRetriever.Read())
+        char[] delimiters = {'\t'};             //each value is separated by tab
+        string line;                            //a line of text that is read in
+
+        //read in each line, placing the keyword/token and
+        //it's opening or closing HTML tag into the appropriate SortedList
+        while((line = langfile.ReadLine()) != null)
         {
-            seps += "|(" + tokenRetriever[1].ToString() + ")";
+            cols = line.Split(delimiters);
+            openers.Add(cols[0], cols[1]);
+            closers.Add(cols[0], cols[2]);
         }
 
-        //string separators = @"(\*\/)|(\()|(\))|(\*)|(,)|(\.)|(:)|(;)|(\?)|(@)|(\[)|(\])|(^)|(`)|(\{)|(\|)|(\})|(~)|(\+)|(<)|(=)|(\n)|(\t)|(>)";
-        string separators = @"(\"")|( )|(&)|(%)|($)|(#)|(!)|(\-)|(//)|(/\*)|(\')";
+        //close the StreamReader
+        langfile.Close();
 
-        string[] tokens = System.Text.RegularExpressions.Regex.Split(input, separators);
+        //read language-specific tokens/keywords and HTML tags from the file we want
+        StreamReader delfile = new StreamReader("C:\\Users\\Zimmy\\Documents\\Snippit\\Languages\\" + language + "dels.txt");
 
-        _codeText.Text = "";
+        string del;                            //delimiter that is read in
+        string dels = @"";                     //list of delimiters that breaks the code into tokens
+
+        //get each delimiter from the delimiter file and add it to the list
+        del = delfile.ReadLine();
+        dels += "(" + del.ToString() + ")";
+        while ((del = delfile.ReadLine()) != null)
+        {
+            dels += "|(" + del.ToString() + ")";
+        }
+
+        //close the StreamReader
+        delfile.Close();
+
+        string separators = @"(\"")|( )|(&)|(%)|($)|(#)|(!)|(\-)|(//)|(/\*)|(\')|(\*\/)|(\()|(\))|(\*)|(,)|(\.)|(:)|(;)|(\?)|(@)|(\[)|(\])|(^)|(`)|(\{)|(\|)|(\})|(~)|(\+)|(<)|(=)|(\n)|(\t)|(>)";
+
+        //string[] tokens = System.Text.RegularExpressions.Regex.Split(input, separators);
+        string[] tokens = System.Text.RegularExpressions.Regex.Split(input, dels);
+
+        string fcode = "";
+
         foreach (string token in tokens)
         {
-            _codeText.Text += token + "\n";
+            if (openers.ContainsKey(token))
+            {
+
+                fcode += openers.ElementAt(openers.IndexOfKey(token)).Value + token
+                        + closers.ElementAt(closers.IndexOfKey(token)).Value;
+            }
+            else
+            {
+                fcode += token;
+            }
         }
 
-        _codeText.Text += seps;
-        
-       /* string openers = @"";
-        string closers = @"";
-
-        _codeText.Text = separators;*/
-
-        return input;
+        return fcode;
     }
-
-    /*    
-    public string format_java(string input)
-    {
-        string seps = @"(\t)|(\n)|(\+)|(-)|(\*)|(/)|(\()|(\))|(\})|(\{)|( )|(;)|(\[)|(\])";
-        string[] tokens = System.Text.RegularExpressions.Regex.Split(input, seps);
-
-        string temp;
-        string output = "";
-
-        SortedSet<string> keywords = new SortedSet<string>();
-        keywords.Add("abstract");
-        keywords.Add("assert");
-        keywords.Add("boolean");
-        keywords.Add("break");
-        keywords.Add("byte");
-        keywords.Add("case");
-        keywords.Add("catch");
-        keywords.Add("char");
-        keywords.Add("class");
-        keywords.Add("const");
-        keywords.Add("continue");
-        keywords.Add("default");
-        keywords.Add("do");
-        keywords.Add("double");
-        keywords.Add("else");
-        keywords.Add("enum");
-        keywords.Add("extends");
-        keywords.Add("final");
-        keywords.Add("finally");
-        keywords.Add("float");
-        keywords.Add("for");
-        keywords.Add("goto");
-        keywords.Add("if");
-        keywords.Add("implements");
-        keywords.Add("import");
-        keywords.Add("instanceof");
-        keywords.Add("int");
-        keywords.Add("interface");
-        keywords.Add("long");
-        keywords.Add("native");
-        keywords.Add("new");
-        keywords.Add("package");
-        keywords.Add("private");
-        keywords.Add("protected");
-        keywords.Add("public");
-        keywords.Add("return");
-        keywords.Add("short");
-        keywords.Add("static");
-        keywords.Add("strictfp");
-        keywords.Add("super");
-        keywords.Add("switch");
-        keywords.Add("synchronized");
-        keywords.Add("this");
-        keywords.Add("throw");
-        keywords.Add("throws");
-        keywords.Add("transient");
-        keywords.Add("try");
-        keywords.Add("void");
-        keywords.Add("volatile");
-        keywords.Add("while");
-
-        SortedSet<string> containers = new SortedSet<string>();
-        containers.Add(")");
-        containers.Add("(");
-        containers.Add("}");
-        containers.Add("{");
-        containers.Add("]");
-        containers.Add("[");
-
-        foreach (string token in tokens)
-        {
-            temp = token;
-
-            if (containers.Contains(temp))
-            {
-                temp = "<font color=\"red\">" + temp + "</font>";
-            }
-            if (keywords.Contains(temp))
-            {
-                temp = "<b><font color=\"blue\">" + temp + "</font></b>";
-            }
-
-            output = String.Concat(output, temp);
-        }
-
-        return output;
-    }*/
-
 }

@@ -18,7 +18,8 @@ public partial class AddToDB : System.Web.UI.Page
     protected void DataBtn_Click(object sender, EventArgs e)
     {
         //the database data we wish to enter
-        StreamReader langfile = new StreamReader("C:\\Users\\Zimmy\\Documents\\Snippit\\Languages\\" + TextBox1.Text);
+        //StreamReader langfile = new StreamReader("C:\\Users\\Zimmy\\Documents\\Snippit\\Languages\\" + TextBox1.Text);
+        StreamReader langfile = new StreamReader(Directory.GetCurrentDirectory() + @"\Languages\" + TextBox1.Text);
 
         //Establish an SQL connection
         string connectString = @"Data Source=.\SQLEXPRESS;AttachDbFilename=C:\Users\Zimmy\Documents\Snippit\App_Data\Database.mdf;Integrated Security=True;User Instance=True;Asynchronous Processing=true";

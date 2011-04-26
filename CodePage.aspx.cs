@@ -29,7 +29,7 @@ public partial class CodePage : System.Web.UI.Page
             codeRetriever.Read();
 
             //set the code to a string variable and print it to the page
-            string theCode = codeRetriever[1].ToString();
+            string theCode = codeRetriever[3].ToString();
             theCode.Replace(" ", "&nbsp;");
             string fcode = "";
 
